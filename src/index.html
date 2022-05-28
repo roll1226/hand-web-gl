@@ -4,38 +4,60 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Document</title>
+    <title>手を動かしてグラデションを動かすやーつ</title>
     <script src="https://unpkg.com/three@0.139.2/build/three.min.js"></script>
 
     <!-- 3つのライブラリを読み込む -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
-    <style>
-      * {
-        margin: 0;
-        padding: 0;
-      }
-    </style>
   </head>
   <body>
+    <div class="modal" data-show="true">
+      <div class="modal__card">
+        <button class="modal__card__btn modal__card__btn--normal">
+          モーションキャプチャーなし
+        </button>
+
+        <button class="modal__card__btn modal__card__btn--hand">
+          モーションキャプチャーあり
+        </button>
+        <span> ※「モーションキャプチャーあり」の場合、カメラが起動します </span>
+      </div>
+    </div>
+
     <canvas id="webgl-canvas"></canvas>
     <div class="container">
       <!-- Webカメラの映像（入力） -->
       <video id="input"></video>
-
       <!--  認識した手の形状を可視化した映像（出力）  -->
-      <canvas id="output" width="600" height="400"></canvas>
+      <canvas id="output" width="300" height="200"></canvas>
     </div>
-    <button id="start">start</button>
-    <button id="stop">stop</button>
+
+    <!-- <button id="start">start</button>
+    <button id="stop">stop</button> -->
 
     <script>
+      const modal = document.querySelector(".modal");
+      let isHand = false;
+      document
+        .querySelector(".modal__card__btn--normal")
+        .addEventListener("click", () => {
+          modal.dataset.show = "false";
+        });
+
+      document
+        .querySelector(".modal__card__btn--hand")
+        .addEventListener("click", () => {
+          modal.dataset.show = "false";
+          camera.start();
+          isHand = true;
+        });
+
       const video = document.getElementById("input");
       const canvas = document.getElementById("output");
       const ctx = canvas.getContext("2d");
 
-      //関連ファイルの読み込み
       const config = {
         locateFile: (file) =>
           `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
@@ -52,10 +74,10 @@
       });
 
       hands.setOptions({
-        maxNumHands: 2, //検出する手の最大数
-        modelComplexity: 1, //ランドマーク検出精度(0か1)
-        minDetectionConfidence: 0.5, //手を検出するための信頼値(0.0~1.0)
-        minTrackingConfidence: 0.5, //ランドマーク追跡の信頼度(0.0~1.0)
+        maxNumHands: 2,
+        modelComplexity: 1,
+        minDetectionConfidence: 0.5,
+        minTrackingConfidence: 0.5,
       });
 
       let codeX = 0;
@@ -80,14 +102,6 @@
           });
         }
       });
-
-      //認識開始・終了ボタン
-      document
-        .getElementById("start")
-        .addEventListener("click", () => camera.start());
-      document
-        .getElementById("stop")
-        .addEventListener("click", () => camera.stop());
     </script>
 
     <!-- vertexShader -->
@@ -242,7 +256,11 @@
         }
 
         _render() {
-          this.uniforms.time.value = codeX;
+          if (isHand) {
+            this.uniforms.time.value = codeX;
+          } else {
+            this.uniforms.time.value += 0.05;
+          }
         }
 
         onRaf() {
